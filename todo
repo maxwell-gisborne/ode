@@ -1,5 +1,5 @@
 
- - [ ] Move copile and run button somewere better
+ - [x] Move copile and run button somewere better
  - [ ] Put the status somewhere better
  - [ ] Put the function body text under a debug tag or something
  - [ ] Get all the tabs visible on the same page (in a column ?)
