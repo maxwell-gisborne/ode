@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ODE IVP Plotter</title>
+
+  <style>
+    :root {
+      --bg: #f7f5fb;
+      --card: #ffffff;
+      --card2: #f1edfb;
+      --text: #1f1b2e;
+      --muted: #6b6385;
+      --line: black;
+      --accent: purple;
+      --accent-soft: #ece8ff;
+      --danger: #c0264b;
+      --ok: #15803d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    header {
+      background: var(--accent);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h1 {
+      color: white;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      index.html font-weight: 650;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tabbtn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 0px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .tabbtn[aria-selected="true"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    main {
+      padding: 20px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 0px;
+      padding: 14px;
+    }
+
+    h2 {
+      font-size: 13px;
+      margin: 0 0 10px;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 0px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    thead th {
+      background: var(--card2);
+      font-size: 12px;
+      padding: 8px;
+      text-align: left;
+      color: var(--muted);
+    }
+
+    tbody td {
+      padding: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    input {
+      width: 100%;
+      padding: 7px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.15);
+    }
+
+    .btnrow {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 0px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .status {
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .status.ok {
+      border-color: #86efac;
+      color: var(--ok);
+    }
+
+    .status.err {
+      border-color: #fda4af;
+      color: var(--danger);
+    }
+
+    [role="tabpanel"] {
+      display: none;
+    }
+
+    [role="tabpanel"][data-active="true"] {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>ODE IVP VIZ </h1>
+      <div class="tabs" role="tablist">
+        <button class="tabbtn" role="tab" id="tab-vars" aria-controls="panel-vars" aria-selected="true">Vars</button>
+        <button class="tabbtn" role="tab" id="tab-const" aria-controls="panel-const">Constants</button>
+        <button class="tabbtn" role="tab" id="tab-perams" aria-controls="panel-perams">Peramiters</button>
+        <button class="tabbtn" role="tab" id="tab-plot" aria-controls="panel-plot">Plot</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="card">
+
+        <!-- Vars -->
+        <div role="tabpanel" id="panel-vars" data-active="true">
+          <h2>Variables</h2>
+
+          <table id="varsTable">
+            <thead>
+              <tr>
+                <th>X</th>
+                <th>X0</th>
+                <th>dX/dt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input value="x"></td>
+                <td><input value="1"></td>
+                <td><input value="sigma*(y-x)"></td>
+              </tr>
+              <tr>
+                <td><input value="y"></td>
+                <td><input value="0"></td>
+                <td><input value="x*(rho-z)-y"></td>
+              </tr>
+              <tr>
+                <td><input value="z"></td>
+                <td><input value="0"></td>
+                <td><input value="x*y-beta*z"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="btnrow">
+            <button id="btnAddVar">Add row</button>
+            <button id="btnTrimVar">Trim</button>
+            <button id="btnCompile" class="primary">Compile</button>
+          </div>
+        </div>
+
+        <!-- Constants -->
+        <div role="tabpanel" id="panel-const">
+          <h2>Constants</h2>
+
+          <table id="constTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input value="sigma"></td>
+                <td><input value="10"></td>
+              </tr>
+              <tr>
+                <td><input value="rho"></td>
+                <td><input value="28"></td>
+              </tr>
+              <tr>
+                <td><input value="beta"></td>
+                <td><input value="8/3"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="btnrow">
+            <button id="btnAddConst">Add row</button>
+            <button id="btnTrimConst">Trim</button>
+          </div>
+        </div>
+
+        <!-- Peramiters  -->
+        <div role="tabpanel" id="panel-perams">
+          <h2>Peramiters</h2>
+          <table id="paramTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>T</td>
+                <td><input id="param_T" value="10"></td>
+              </tr>
+              <tr>
+                <td>dt</td>
+                <td><input id="param_dt" value="0.01"></td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+
+        <!-- Plot -->
+        <div role="tabpanel" id="panel-plot">
+          <h2>Plot</h2>
+          <canvas id="plotCanvas" width=800 height=400> </canvas>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Status</h2>
+        <div id="status" class="status">Ready.</div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // Tabs
+    document.querySelectorAll('[role="tab"]').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('[role="tab"]').forEach(t => t.setAttribute('aria-selected', 'false'));
+        document.querySelectorAll('[role="tabpanel"]').forEach(p => p.dataset.active = 'false');
+        tab.setAttribute('aria-selected', 'true');
+        document.getElementById(tab.getAttribute('aria-controls')).dataset.active = 'true';
+      };
+    });
+
+    // Helpers
+    function trimTable(tableId) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      [...tbody.rows].forEach(tr => {
+        const inputs = [...tr.querySelectorAll('input')];
+        if (inputs.every(i => !i.value.trim())) tr.remove();
+      });
+    }
+
+    document.getElementById('btnTrimConst').onclick = () => trimTable('constTable');
+    document.getElementById('btnTrimVar').onclick = () => trimTable('varsTable');
+
+    document.getElementById('btnAddConst').onclick = () => {
+      document.querySelector('#constTable tbody')
+        .insertAdjacentHTML('beforeend',
+          `<tr><td><input></td><td><input></td></tr>`);
+    };
+
+    document.getElementById('btnAddVar').onclick = () => {
+      document.querySelector('#varsTable tbody')
+        .insertAdjacentHTML('beforeend',
+          `<tr><td><input></td><td><input value="0"></td><td><input value="0"></td></tr>`);
+    };
+
+
+    // State
+    const state_unloaded = "unloaded";
+    const state_loaded = "loaded";
+    const state_error = "error";
+    const state_complete = "complet";
+
+    function StateObject(phase, ...data) {
+      if (phase == state_loaded) {
+        this.params = data[0];
+        this.F = data[1];
+        this.X0 = data[2];
+        this.X = data[3];
+        this.Xdot = data[4];
+        this.code = data[5];
+        this.history = data[6];
+      }
+      if (phase == state_error) {
+        this.error_type = data[0];
+        this.error_message = data[1];
+        this.error_details = data.slice(1);
+      }
+      this.phase = phase;
+    }
+
+    State = (phase, ...data) => new StateObject(phase, ...data);
+    var state = State(state_unloaded);
+
+    // logic 
+    function render() {
+      switch (state.phase) {
+        case state_unloaded:
+          document.getElementById('status').textContent = 'unloaded';
+          break;
+        case state_loaded:
+          document.getElementById('status').textContent = 'compiled:\n' + state.code;
+          run_solver();
+          state.phase = state_complete;
+          break;
+        case state_error:
+          document.getElementById('status').textContent = 'Error: ' + state.error_type + ': ' + state.error_message + '\n' + state.error_details.join('\n');
+          break;
+        case state_complete:
+          break;
+      }
+    }
+
+    function run_solver() {
+      const F = state.F;
+      const X0 = state.X0;
+      const X = state.X;
+      const Xdot = state.Xdot;
+      const T = state.params.T;
+      const dt = state.params.dt;
+      const N = X.length;
+      const history = state.history;
+      const sample_rate = state.params.sample_rate;
+
+      const k1 = new Float64Array(N);
+      const k2 = new Float64Array(N);
+      const k3 = new Float64Array(N);
+      const k4 = new Float64Array(N);
+      const tmp = new Float64Array(N);
+      for (let n = 0; n < N; n++) X[n] = X0[n];
+      for (let n = 0; n < N; n++) history.x[n] = X0[n];
+
+      let t = 0;
+      let fc = 0
+      while (t < T) {
+        // kr step
+        F(X, t, k1);
+        for (let n = 0; n < N; n++) tmp[n] = X[n] + 0.5 * dt * k1[n];
+
+        F(tmp, t + 0.5 * dt, k2);
+        for (let n = 0; n < N; n++) tmp[n] = X[n] + 0.5 * dt * k2[n];
+
+        F(tmp, t + 0.5 * dt, k3);
+        for (let n = 0; n < N; n++) tmp[n] = X[n] + dt * k3[n];
+
+        F(tmp, t + dt, k4);
+        for (let n = 0; n < N; n++) X[n] += dt / 6 * (k1[n] + 2 * k2[n] + 2 * k3[n] + k4[n]);
+
+        t += dt;
+        state.t = t;
+        fc++;
+
+        if (fc % sample_rate == 0) {
+          let c = Math.floor(fc / sample_rate);
+          for (let n = 0; n < N; n++) history.x[n + N * c] = X[n];
+          history.t[c] = t;
+        }
+      }
+
+      // call render
+      render_graph();
+
+    }
+
+    // plotting
+
+    function render_graph() {
+      const canvas = document.getElementById("plotCanvas");
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+
+      const history = state.history;
+
+      const tArr = history.t;
+      const xArr = history.x; // array of per-variable arrays
+      const M = tArr.length;
+      const N = Math.floor(xArr.length / M);
+
+      // Plot layout
+      const padL = 48, padR = 10, padT = 10, padB = 26;
+      const innerW = Math.max(1, W - padL - padR);
+      const innerH = Math.max(1, H - padT - padB);
+
+      // Extents
+      let tMin = tArr[0], tMax = tArr[M - 1];
+
+      let yMin = Infinity, yMax = -Infinity;
+      for (let i = 0; i < N * M; i++) {
+        const v = xArr[i];
+        if (v < yMin) yMin = v;
+        if (v > yMax) yMax = v;
+      }
+
+      if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+        console.log(yMin, yMax, xArr, N, M);
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#000";
+        ctx.font = "12px ui-monospace, monospace";
+        ctx.fillText("Infinte y bounds.", 10, 20);
+        return;
+      }
+      if (yMin === yMax) {yMin -= 1; yMax += 1;}
+
+      // Helpers
+      const xpx = (t) => padL + (t - tMin) * innerW / (tMax - tMin || 1);
+      const ypx = (y) => padT + (yMax - y) * innerH / (yMax - yMin || 1);
+
+      // Clear background
+      ctx.clearRect(0, 0, W, H);
+
+      // Axes
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      // x-axis line
+      ctx.moveTo(padL, padT + innerH);
+      ctx.lineTo(padL + innerW, padT + innerH);
+      // y-axis line
+      ctx.moveTo(padL, padT);
+      ctx.lineTo(padL, padT + innerH);
+      ctx.stroke();
+
+      // Grid (5 ticks)
+      const ticks = 5;
+      ctx.strokeStyle = "rgba(0,0,0,0.10)";
+      ctx.fillStyle = "rgba(0,0,0,0.65)";
+      ctx.font = "11px ui-monospace, monospace";
+
+      for (let j = 0; j <= ticks; j++) {
+        const a = j / ticks;
+
+        // y grid
+        const yy = padT + a * innerH;
+        ctx.beginPath();
+        ctx.moveTo(padL, yy);
+        ctx.lineTo(padL + innerW, yy);
+        ctx.stroke();
+
+        const yVal = yMax - a * (yMax - yMin);
+        ctx.fillText(fmt(yVal), 6, yy + 4);
+
+        // x grid
+        const xx = padL + a * innerW;
+        ctx.beginPath();
+        ctx.moveTo(xx, padT);
+        ctx.lineTo(xx, padT + innerH);
+        ctx.stroke();
+
+        const tVal = tMin + a * (tMax - tMin);
+        ctx.fillText(fmt(tVal), xx - 10, padT + innerH + 18);
+      }
+
+      // Plot each variable over time
+      ctx.lineWidth = 2;
+
+      for (let i = 0; i < N; i++) {
+        // Choose a distinct hue per variable (no dependencies)
+        const hue = (i * 137.508) % 360; // golden angle
+        ctx.strokeStyle = `hsl(${hue} 70% 45%)`;
+
+        ctx.beginPath();
+        let started = false;
+
+        for (let k = 0; k < M; k++) {
+          const tt = tArr[k];
+          const vv = xArr[i + N * k];
+          if (!Number.isFinite(vv)) {started = false; continue;}
+
+          const px = xpx(tt);
+          const py = ypx(vv);
+
+          if (!started) {
+            ctx.moveTo(px, py);
+            started = true;
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.stroke();
+      }
+
+      // Legend
+      const names = (state.vars && state.vars.length === N)
+        ? state.vars.map(v => v.name)
+        : Array.from({length: N}, (_, i) => `x${i}`);
+
+      let lx = padL + 6, ly = padT + 14;
+      ctx.font = "12px ui-monospace, monospace";
+      for (let i = 0; i < N; i++) {
+        const hue = (i * 137.508) % 360;
+        ctx.fillStyle = `hsl(${hue} 70% 45%)`;
+        ctx.fillRect(lx, ly - 9, 10, 10);
+        ctx.fillStyle = "rgba(0,0,0,0.75)";
+        ctx.fillText(names[i], lx + 14, ly);
+        ly += 16;
+        if (ly > padT + innerH - 8) {ly = padT + 14; lx += 70;}
+      }
+
+      function fmt(x) {
+        const ax = Math.abs(x);
+        if (ax !== 0 && (ax < 1e-3 || ax >= 1e4)) return x.toExponential(2);
+        return x.toFixed(3);
+      }
+    }
+
+
+
+    document.getElementById('btnCompile').onclick = () => {
+      const vars = [...document.querySelectorAll('#varsTable tbody tr')].map(tr => {
+        const [x, x0, rhs] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+        return {x, x0, rhs};
+      });
+      const n_vars = vars.length;
+
+      const consts = [...document.querySelectorAll('#constTable tbody tr')].map(tr => {
+        const [n, v] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
+        return {n, v};
+      });
+
+      const params = {
+        T: parseFloat(document.querySelector('#param_T').value),
+        dt: parseFloat(document.querySelector('#param_dt').value),
+        sample_rate: 10,
+      };
+
+      if (isNaN(params.T) || isNaN(params.dt)) {
+        state = State(state_error, 'Invalid Peramiters');
+        return render();
+      }
+
+      const history = {
+        x: new Float64Array(Math.ceil(params.T / params.dt / params.sample_rate * n_vars)),
+        t: new Float64Array(Math.ceil(params.T / params.dt / params.sample_rate)),
+      };
+
+      const varblock = vars.map((v, i) => `const ${v['x']} = X[${i}];`).join('\n');
+
+      const constblock = consts.map(c => {
+        v = c['v'].trim()
+        if (v == '') {v = '0.0'}
+        return `const ${c['n']} = ${v};`
+      }).join('\n');
+
+      const returnblock = vars.map((v, i) => `Xdot[${i}] = ${v['rhs']};`).join('\n');
+
+      const function_body = [constblock, varblock, returnblock].join('\n');
+
+
+      X0 = new Float64Array(vars.map(v => {
+        if (v['x0'].trim() == '') return 0.0;
+        return parseFloat(v['x0']);
+      }));
+      const Xdot = new Float64Array(n_vars);
+      const X = new Float64Array(n_vars);
+
+      var F;
+      try {
+        F = new Function('X', 't', 'Xdot', function_body);
+        F(X0, 0, Xdot);
+      } catch (error) {
+        console.log('error');
+        state = State(state_error, 'when Calling F', error, function_body);
+        return render();
+      }
+
+      state = State(state_loaded, params, F, X0, X, Xdot, function_body, history);
+      return render();
+    }
+
+    render();
+  </script>
+</body>
+
+</html>
