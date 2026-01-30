@@ -365,6 +365,11 @@
           <div class="btnrow action-row">
             <button id="btnCompile" class="primary">Compile & Run</button>
           </div>
+          <div class="btnrow action-row">
+            <button id="btnSaveInputs">Save inputs</button>
+            <button id="btnLoadInputs">Reload saved</button>
+            <button id="btnClearInputs">Clear saved</button>
+          </div>
         </aside>
       </div>
     </div>
@@ -372,28 +377,165 @@
 
   <script>
     // Helpers
-    function trimTable(tableId) {
-      const tbody = document.querySelector(`#${tableId} tbody`);
-      [...tbody.rows].forEach(tr => {
-        const inputs = [...tr.querySelectorAll('input')];
-        if (inputs.every(i => !i.value.trim())) tr.remove();
+    const storageKey = 'ode-ivp-inputs-v1';
+    const statusEl = document.getElementById('status');
+
+    const defaultModel = () => ({
+      vars: [
+        {x: 'x', x0: '1', rhs: 'sigma*(y-x)'},
+        {x: 'y', x0: '0', rhs: 'x*(rho-z)-y'},
+        {x: 'z', x0: '0', rhs: 'x*y-beta*z'},
+      ],
+      consts: [
+        {n: 'sigma', v: '10'},
+        {n: 'rho', v: '28'},
+        {n: 'beta', v: '8/3'},
+      ],
+      params: {
+        T: '10',
+        dt: '0.01',
+        sample_rate: '10',
+      },
+    });
+
+    let model = defaultModel();
+
+    function setStatusMessage(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle('err', isError);
+      statusEl.classList.toggle('ok', !isError);
+    }
+
+    function updateModelVar(index, key, value) {
+      model.vars[index][key] = value;
+    }
+
+    function updateModelConst(index, key, value) {
+      model.consts[index][key] = value;
+    }
+
+    function trimRows(items, keys, fallback) {
+      const trimmed = items.filter(row => keys.some(key => (row[key] ?? '').trim() !== ''));
+      return trimmed.length ? trimmed : [fallback];
+    }
+
+    function createInput(value, onInput) {
+      const input = document.createElement('input');
+      input.value = value;
+      input.addEventListener('input', onInput);
+      return input;
+    }
+
+    function renderVars() {
+      const tbody = document.querySelector('#varsTable tbody');
+      tbody.innerHTML = '';
+      model.vars.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        const xInput = createInput(row.x ?? '', (event) => updateModelVar(index, 'x', event.target.value));
+        const x0Input = createInput(row.x0 ?? '0', (event) => updateModelVar(index, 'x0', event.target.value));
+        const rhsInput = createInput(row.rhs ?? '0', (event) => updateModelVar(index, 'rhs', event.target.value));
+        [xInput, x0Input, rhsInput].forEach(input => {
+          const td = document.createElement('td');
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
       });
     }
 
-    document.getElementById('btnTrimConst').onclick = () => trimTable('constTable');
-    document.getElementById('btnTrimVar').onclick = () => trimTable('varsTable');
+    function renderConsts() {
+      const tbody = document.querySelector('#constTable tbody');
+      tbody.innerHTML = '';
+      model.consts.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        const nameInput = createInput(row.n ?? '', (event) => updateModelConst(index, 'n', event.target.value));
+        const valueInput = createInput(row.v ?? '', (event) => updateModelConst(index, 'v', event.target.value));
+        [nameInput, valueInput].forEach(input => {
+          const td = document.createElement('td');
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderParams() {
+      document.querySelector('#param_T').value = model.params.T ?? '';
+      document.querySelector('#param_dt').value = model.params.dt ?? '';
+      document.querySelector('#param_sample_rate').value = model.params.sample_rate ?? '';
+    }
+
+    function renderInputs() {
+      renderVars();
+      renderConsts();
+      renderParams();
+    }
+
+    document.querySelector('#param_T').addEventListener('input', (event) => {
+      model.params.T = event.target.value;
+    });
+    document.querySelector('#param_dt').addEventListener('input', (event) => {
+      model.params.dt = event.target.value;
+    });
+    document.querySelector('#param_sample_rate').addEventListener('input', (event) => {
+      model.params.sample_rate = event.target.value;
+    });
+
+    document.getElementById('btnTrimConst').onclick = () => {
+      model.consts = trimRows(model.consts, ['n', 'v'], {n: '', v: ''});
+      renderConsts();
+    };
+    document.getElementById('btnTrimVar').onclick = () => {
+      model.vars = trimRows(model.vars, ['x', 'x0', 'rhs'], {x: '', x0: '0', rhs: '0'});
+      renderVars();
+    };
 
     document.getElementById('btnAddConst').onclick = () => {
-      document.querySelector('#constTable tbody')
-        .insertAdjacentHTML('beforeend',
-          `<tr><td><input></td><td><input></td></tr>`);
+      model.consts.push({n: '', v: ''});
+      renderConsts();
     };
 
     document.getElementById('btnAddVar').onclick = () => {
-      document.querySelector('#varsTable tbody')
-        .insertAdjacentHTML('beforeend',
-          `<tr><td><input></td><td><input value="0"></td><td><input value="0"></td></tr>`);
+      model.vars.push({x: '', x0: '0', rhs: '0'});
+      renderVars();
     };
+
+    function saveInputs() {
+      localStorage.setItem(storageKey, JSON.stringify(model));
+      setStatusMessage('Saved inputs to this browser.', false);
+    }
+
+    function loadInputs(showMessage = true, shouldRender = true) {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        if (showMessage) setStatusMessage('No saved inputs found.', true);
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(raw);
+        model = {
+          vars: Array.isArray(payload.vars) ? payload.vars : defaultModel().vars,
+          consts: Array.isArray(payload.consts) ? payload.consts : defaultModel().consts,
+          params: payload.params ? payload.params : defaultModel().params,
+        };
+        if (shouldRender) {
+          renderInputs();
+        }
+        if (showMessage) setStatusMessage('Reloaded saved inputs.', false);
+      } catch (error) {
+        if (showMessage) setStatusMessage('Saved inputs are invalid JSON.', true);
+      }
+    }
+
+    function clearSavedInputs() {
+      localStorage.removeItem(storageKey);
+      setStatusMessage('Cleared saved inputs.', false);
+    }
+
+    document.getElementById('btnSaveInputs').onclick = saveInputs;
+    document.getElementById('btnLoadInputs').onclick = () => loadInputs(true, true);
+    document.getElementById('btnClearInputs').onclick = clearSavedInputs;
 
 
     // State
@@ -653,21 +795,22 @@
 
 
     document.getElementById('btnCompile').onclick = () => {
-      const vars = [...document.querySelectorAll('#varsTable tbody tr')].map(tr => {
-        const [x, x0, rhs] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
-        return {x, x0, rhs};
-      });
+      const vars = model.vars.map(v => ({
+        x: v.x.trim(),
+        x0: v.x0.trim(),
+        rhs: v.rhs.trim(),
+      }));
       const n_vars = vars.length;
 
-      const consts = [...document.querySelectorAll('#constTable tbody tr')].map(tr => {
-        const [n, v] = [...tr.querySelectorAll('input')].map(i => i.value.trim());
-        return {n, v};
-      });
+      const consts = model.consts.map(c => ({
+        n: c.n.trim(),
+        v: c.v.trim(),
+      }));
 
       const params = {
-        T: parseFloat(document.querySelector('#param_T').value),
-        dt: parseFloat(document.querySelector('#param_dt').value),
-        sample_rate: parseFloat(document.querySelector('#param_sample_rate').value),
+        T: parseFloat(model.params.T),
+        dt: parseFloat(model.params.dt),
+        sample_rate: parseFloat(model.params.sample_rate),
       };
 
       if (isNaN(params.T) || isNaN(params.dt) || isNaN(params.sample_rate)) {
@@ -714,6 +857,8 @@
       return render();
     }
 
+    loadInputs(false, false);
+    renderInputs();
     render();
   </script>
 </body>
