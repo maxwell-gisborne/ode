@@ -148,6 +148,11 @@
       flex-wrap: wrap;
     }
 
+    .action-row {
+      margin-top: 12px;
+      align-items: center;
+    }
+
     button {
       border: 1px solid var(--line);
       background: #fff;
@@ -172,6 +177,60 @@
       border-radius: 12px;
       padding: 10px;
       background: #fff;
+    }
+
+    .status-details {
+      margin-top: 10px;
+    }
+
+    .status-details summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .status-details[open] summary {
+      margin-bottom: 8px;
+    }
+
+    .status-phase {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      background: #cbd5f5;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    }
+
+    .status-pip[data-status="unloaded"] {
+      background: #cbd5f5;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    }
+
+    .status-pip[data-status="loaded"] {
+      background: #fbbf24;
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+    }
+
+    .status-pip[data-status="error"] {
+      background: #f87171;
+      box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+    }
+
+    .status-pip[data-status="complet"] {
+      background: #34d399;
+      box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.2);
     }
 
     .status.ok {
@@ -245,7 +304,6 @@
           <div class="btnrow">
             <button id="btnAddVar">Add row</button>
             <button id="btnTrimVar">Trim</button>
-            <button id="btnCompile" class="primary">Compile</button>
           </div>
         </div>
 
@@ -316,7 +374,17 @@
 
       <aside class="card">
         <h2>Status</h2>
-        <div id="status" class="status">Ready.</div>
+        <div class="status-phase">
+          <span class="status-pip" id="statusPip" data-status="unloaded" aria-hidden="true"></span>
+          Phase: <span id="statusPhase">unloaded</span>
+        </div>
+        <details class="status-details" open>
+          <summary>Status details</summary>
+          <div id="status" class="status">Ready.</div>
+        </details>
+        <div class="btnrow action-row">
+          <button id="btnCompile" class="primary">Compile & Run</button>
+        </div>
       </aside>
     </div>
   </main>
@@ -388,17 +456,25 @@
     function render() {
       switch (state.phase) {
         case state_unloaded:
+          document.getElementById('statusPhase').textContent = state_unloaded;
+          document.getElementById('statusPip').dataset.status = state_unloaded;
           document.getElementById('status').textContent = 'unloaded';
           break;
         case state_loaded:
+          document.getElementById('statusPhase').textContent = state_loaded;
+          document.getElementById('statusPip').dataset.status = state_loaded;
           document.getElementById('status').textContent = 'compiled:\n' + state.code;
           run_solver();
           state.phase = state_complete;
           break;
         case state_error:
+          document.getElementById('statusPhase').textContent = state_error;
+          document.getElementById('statusPip').dataset.status = state_error;
           document.getElementById('status').textContent = 'Error: ' + state.error_type + ': ' + state.error_message + '\n' + state.error_details.join('\n');
           break;
         case state_complete:
+          document.getElementById('statusPhase').textContent = state_complete;
+          document.getElementById('statusPip').dataset.status = state_complete;
           break;
       }
     }
