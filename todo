@@ -1,0 +1,13 @@
+
+ - [ ] Move copile and run button somewere better
+ - [ ] Put the status somewhere better
+ - [ ] Put the function body text under a debug tag or something
+ - [ ] Get all the tabs visible on the same page (in a column ?)
+ - [ ] Expose variable names to the plotting function
+ - [ ] Make the plotting canvas work with mobile better
+ - [ ] Let the plotting tab enable/disable variables
+ - [ ] A function tab (?) that lets you define intermediate variables (not via their derivitive)
+ - [ ] A way to add comments 
+ - [ ] make the rhs input more readable for larger inputs
+ - [ ] A way to store/reload/share different systems (?shareing is dangerouse due to the way im using )
+ - [ ] A way to download the output as a csv
