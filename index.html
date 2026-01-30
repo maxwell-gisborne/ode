@@ -54,28 +54,6 @@
       index.html font-weight: 650;
     }
 
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .tabbtn {
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--text);
-      padding: 6px 10px;
-      border-radius: 0px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    .tabbtn[aria-selected="true"] {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
     main {
       padding: 20px 0;
     }
@@ -97,6 +75,11 @@
       border: 1px solid var(--line);
       border-radius: 0px;
       padding: 14px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
     }
 
     h2 {
@@ -233,6 +216,12 @@
       box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.2);
     }
 
+    #plotCanvas {
+      width: 100%;
+      height: 360px;
+      display: block;
+    }
+
     .status.ok {
       border-color: #86efac;
       color: var(--ok);
@@ -243,13 +232,6 @@
       color: var(--danger);
     }
 
-    [role="tabpanel"] {
-      display: none;
-    }
-
-    [role="tabpanel"][data-active="true"] {
-      display: block;
-    }
   </style>
 </head>
 
@@ -257,21 +239,15 @@
   <header>
     <div class="wrap">
       <h1>ODE IVP VIZ </h1>
-      <div class="tabs" role="tablist">
-        <button class="tabbtn" role="tab" id="tab-vars" aria-controls="panel-vars" aria-selected="true">Vars</button>
-        <button class="tabbtn" role="tab" id="tab-const" aria-controls="panel-const">Constants</button>
-        <button class="tabbtn" role="tab" id="tab-perams" aria-controls="panel-perams">Peramiters</button>
-        <button class="tabbtn" role="tab" id="tab-plot" aria-controls="panel-plot">Plot</button>
-      </div>
     </div>
   </header>
 
   <main class="wrap">
     <div class="grid">
-      <section class="card">
+      <div class="stack">
+        <section class="card">
 
-        <!-- Vars -->
-        <div role="tabpanel" id="panel-vars" data-active="true">
+          <!-- Vars -->
           <h2>Variables</h2>
 
           <table id="varsTable">
@@ -305,10 +281,10 @@
             <button id="btnAddVar">Add row</button>
             <button id="btnTrimVar">Trim</button>
           </div>
-        </div>
+        </section>
 
         <!-- Constants -->
-        <div role="tabpanel" id="panel-const">
+        <section class="card">
           <h2>Constants</h2>
 
           <table id="constTable">
@@ -338,10 +314,10 @@
             <button id="btnAddConst">Add row</button>
             <button id="btnTrimConst">Trim</button>
           </div>
-        </div>
+        </section>
 
         <!-- Peramiters  -->
-        <div role="tabpanel" id="panel-perams">
+        <section class="card">
           <h2>Peramiters</h2>
           <table id="paramTable">
             <thead>
@@ -366,44 +342,36 @@
             </tbody>
           </table>
 
-        </div>
+        </section>
+      </div>
 
 
+      <div class="stack">
         <!-- Plot -->
-        <div role="tabpanel" id="panel-plot">
+        <section class="card">
           <h2>Plot</h2>
           <canvas id="plotCanvas" width=800 height=400> </canvas>
-        </div>
-      </section>
+        </section>
 
-      <aside class="card">
-        <h2>Status</h2>
-        <div class="status-phase">
-          <span class="status-pip" id="statusPip" data-status="unloaded" aria-hidden="true"></span>
-          Phase: <span id="statusPhase">unloaded</span>
-        </div>
-        <details class="status-details" open>
-          <summary>Status details</summary>
-          <div id="status" class="status">Ready.</div>
-        </details>
-        <div class="btnrow action-row">
-          <button id="btnCompile" class="primary">Compile & Run</button>
-        </div>
-      </aside>
+        <aside class="card">
+          <h2>Status</h2>
+          <div class="status-phase">
+            <span class="status-pip" id="statusPip" data-status="unloaded" aria-hidden="true"></span>
+            Phase: <span id="statusPhase">unloaded</span>
+          </div>
+          <details class="status-details" open>
+            <summary>Status details</summary>
+            <div id="status" class="status">Ready.</div>
+          </details>
+          <div class="btnrow action-row">
+            <button id="btnCompile" class="primary">Compile & Run</button>
+          </div>
+        </aside>
+      </div>
     </div>
   </main>
 
   <script>
-    // Tabs
-    document.querySelectorAll('[role="tab"]').forEach(tab => {
-      tab.onclick = () => {
-        document.querySelectorAll('[role="tab"]').forEach(t => t.setAttribute('aria-selected', 'false'));
-        document.querySelectorAll('[role="tabpanel"]').forEach(p => p.dataset.active = 'false');
-        tab.setAttribute('aria-selected', 'true');
-        document.getElementById(tab.getAttribute('aria-controls')).dataset.active = 'true';
-      };
-    });
-
     // Helpers
     function trimTable(tableId) {
       const tbody = document.querySelector(`#${tableId} tbody`);
@@ -539,6 +507,11 @@
     function render_graph() {
       const canvas = document.getElementById("plotCanvas");
       if (!canvas) return;
+
+      const targetWidth = Math.max(1, canvas.clientWidth || canvas.width);
+      const targetHeight = Math.max(1, canvas.clientHeight || canvas.height);
+      if (canvas.width !== targetWidth) canvas.width = targetWidth;
+      if (canvas.height !== targetHeight) canvas.height = targetHeight;
 
       const ctx = canvas.getContext("2d");
       const W = canvas.width;
